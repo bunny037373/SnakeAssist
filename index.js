@@ -1,16 +1,16 @@
 require("dotenv").config();
 const express = require("express");
-const fetch = require("node-fetch"); // make sure to `npm install node-fetch`
+const fetch = require("node-fetch"); // make sure node-fetch is installed
 const { Client, GatewayIntentBits, ActivityType } = require("discord.js");
 
 const app = express();
 const PORT = process.env.PORT || 4000;
 const TOKEN = process.env.DISCORD_TOKEN;
-const TENOR_KEY = process.env.TENOR_API_KEY; // get your API key from Tenor
+const TENOR_KEY = process.env.TENOR_API_KEY; // Get from Tenor: https://tenor.com/developer/key
 
 // --- WEB SERVER (Keep-alive) ---
 app.get("/", (req, res) => {
-  res.send("✅ Bot is running");
+  res.send("✅ Floppa Bot is running");
 });
 
 app.listen(PORT, () => {
@@ -28,6 +28,7 @@ const client = new Client({
 
 let cooldown = false;
 
+// Function: fetch random Floppa GIF from Tenor
 async function getRandomFloppa() {
   try {
     const response = await fetch(
@@ -35,14 +36,14 @@ async function getRandomFloppa() {
     );
     const json = await response.json();
     const results = json.results;
-    if (!results || results.length === 0) return "No Floppa found 😭";
+    if (!results || results.length === 0) return "😭 No Floppa found";
 
     const randomIndex = Math.floor(Math.random() * results.length);
     const gifUrl = results[randomIndex].media_formats.gif.url;
     return gifUrl;
   } catch (err) {
     console.error("Error fetching Floppa GIF:", err);
-    return "Error getting Floppa 😭";
+    return "❌ Error getting Floppa";
   }
 }
 
@@ -68,7 +69,7 @@ client.on("messageCreate", async (message) => {
     const gif = await getRandomFloppa();
     await message.channel.send(gif);
 
-    setTimeout(() => (cooldown = false), 3000);
+    setTimeout(() => (cooldown = false), 3000); // 3-second cooldown
   }
 
   // --- buh / bruh trigger ---
