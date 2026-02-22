@@ -2,7 +2,13 @@
 const { Client, GatewayIntentBits, ActivityType } = require('discord.js');
 require('dotenv').config();
 const express = require('express');
-const fetch = require('node-fetch');
+const fetch = (...args) => {
+    if (typeof globalThis.fetch === 'function') {
+        return globalThis.fetch(...args);
+    }
+
+    return import('node-fetch').then(({ default: nodeFetch }) => nodeFetch(...args));
+};
 
 // ================= EXPRESS KEEP-ALIVE =================
 const app = express();
