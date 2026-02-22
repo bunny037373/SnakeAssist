@@ -1,10 +1,12 @@
 require("dotenv").config();
 const express = require("express");
+const fetch = require("node-fetch"); // make sure to `npm install node-fetch`
 const { Client, GatewayIntentBits, ActivityType } = require("discord.js");
 
 const app = express();
 const PORT = process.env.PORT || 4000;
 const TOKEN = process.env.DISCORD_TOKEN;
+const TENOR_KEY = process.env.TENOR_API_KEY; // get your API key from Tenor
 
 // --- WEB SERVER (Keep-alive) ---
 app.get("/", (req, res) => {
@@ -24,33 +26,63 @@ const client = new Client({
   ]
 });
 
+let cooldown = false;
+
+async function getRandomFloppa() {
+  try {
+    const response = await fetch(
+      `https://tenor.googleapis.com/v2/search?q=floppa&key=${TENOR_KEY}&limit=20&media_filter=minimal`
+    );
+    const json = await response.json();
+    const results = json.results;
+    if (!results || results.length === 0) return "No Floppa found 😭";
+
+    const randomIndex = Math.floor(Math.random() * results.length);
+    const gifUrl = results[randomIndex].media_formats.gif.url;
+    return gifUrl;
+  } catch (err) {
+    console.error("Error fetching Floppa GIF:", err);
+    return "Error getting Floppa 😭";
+  }
+}
+
 client.once("ready", () => {
   console.log(`✅ Logged in as ${client.user.tag}`);
 
-
   client.user.setPresence({
-    status: "online", // online | idle | dnd | invisible
-    activities: [
-      {
-        name: "Do Not Disturb Mode",
-        type: ActivityType.Playing
-      }
-    ]
+    status: "online",
+    activities: [{ name: "Floppa is watching", type: ActivityType.Playing }]
   });
 });
 
-// Event Listener: Respond to messages
-client.on("messageCreate", (message) => {
-  // Ignore bot messages
+client.on("messageCreate", async (message) => {
   if (message.author.bot) return;
 
-  // Example command
-  if (message.content === "!ping") {
-    message.reply("🏓 Pong!");
+  const content = message.content.toLowerCase();
+
+  // --- !floppa command ---
+  if (content === "!floppa") {
+    if (cooldown) return;
+    cooldown = true;
+
+    const gif = await getRandomFloppa();
+    await message.channel.send(gif);
+
+    setTimeout(() => (cooldown = false), 3000);
+  }
+
+  // --- buh / bruh trigger ---
+  if ((content.includes("buh") || content.includes("bruh")) && !cooldown) {
+    cooldown = true;
+
+    const gif = await getRandomFloppa();
+    await message.channel.send(gif);
+
+    setTimeout(() => (cooldown = false), 3000);
   }
 });
 
-// Global error handling to prevent crash
+// Global error handling
 process.on("unhandledRejection", (error) => {
   console.error("Unhandled promise rejection:", error);
 });
