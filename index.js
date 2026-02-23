@@ -81,8 +81,6 @@ const rest = new REST({ version: '10' }).setToken(TOKEN);
 function createFloppaEmbed(isBuh = false) {
   const url = isBuh ? BUH_GIF : FLOPPA_IMAGES[Math.floor(Math.random() * FLOPPA_IMAGES.length)];
   return new EmbedBuilder()
-    .setColor("#D2B48C")
-    .setTitle(isBuh ? "BUH." : "📸 Floppa Spotted!")
     .setImage(url);
 }
 
