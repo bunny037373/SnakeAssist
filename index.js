@@ -14,7 +14,10 @@ const {
 const app = express();
 const PORT = process.env.PORT || 10000;
 const TOKEN = process.env.DISCORD_TOKEN;
-const CLIENT_ID = process.env.CLIENT_ID; // Must add this to Render Env
+const CLIENT_ID = process.env.CLIENT_ID;
+
+// The special GIF for "buh" or "bruh"
+const BUH_GIF = "https://media.discordapp.net/attachments/1363398109803053109/1410649367194374196/attachment.gif";
 
 const FLOPPA_IMAGES = [
   "https://media.discordapp.net/attachments/1219622260718047333/1475237750390390915/00.png",
@@ -45,10 +48,6 @@ const FLOPPA_IMAGES = [
   "https://media.discordapp.net/attachments/1219622260718047333/1475240461152293034/floppa8.jpg"
 ];
 
-// Server for Render
-app.get("/", (req, res) => res.send("✅ Floppa is ready for Global User Install!"));
-app.listen(PORT, '0.0.0.0', () => console.log(`🌐 Port ${PORT}`));
-
 const client = new Client({
   intents: [
     GatewayIntentBits.Guilds,
@@ -59,13 +58,13 @@ const client = new Client({
   partials: [Partials.Channel]
 });
 
-// --- Register Slash Command ---
+// --- REGISTER SLASH COMMAND ---
 const commands = [
   new SlashCommandBuilder()
     .setName('floppa')
     .setDescription('Summon a random Floppa anywhere!')
-    .setIntegrationTypes([0, 1]) // 0 = Guild, 1 = User Install
-    .setContexts([0, 1, 2])       // 0 = Guild, 1 = Bot DM, 2 = Private Channel/Group
+    .setIntegrationTypes([0, 1]) // Guild + User Install
+    .setContexts([0, 1, 2])       // All contexts
 ].map(c => c.toJSON());
 
 const rest = new REST({ version: '10' }).setToken(TOKEN);
@@ -74,38 +73,46 @@ const rest = new REST({ version: '10' }).setToken(TOKEN);
   try {
     console.log('Pushing slash commands...');
     await rest.put(Routes.applicationCommands(CLIENT_ID), { body: commands });
-    console.log('Commands registered globally.');
+    console.log('Slash commands registered!');
   } catch (e) { console.error(e); }
 })();
 
-// --- Floppa Logic ---
-function createFloppaEmbed() {
-  const url = FLOPPA_IMAGES[Math.floor(Math.random() * FLOPPA_IMAGES.length)];
+// --- LOGIC ---
+function createFloppaEmbed(isBuh = false) {
+  const url = isBuh ? BUH_GIF : FLOPPA_IMAGES[Math.floor(Math.random() * FLOPPA_IMAGES.length)];
   return new EmbedBuilder()
     .setColor("#D2B48C")
-    .setTitle("📸 Floppa Spotted!")
+    .setTitle(isBuh ? "BUH." : "📸 Floppa Spotted!")
     .setImage(url);
 }
 
-// Handle Slash Commands (Required for User Install)
+// Handle Slash Commands
 client.on("interactionCreate", async (interaction) => {
   if (!interaction.isChatInputCommand()) return;
   if (interaction.commandName === 'floppa') {
-    await interaction.reply({ embeds: [createFloppaEmbed()] });
+    // Slash command gives a random one (not the buh gif specifically)
+    await interaction.reply({ embeds: [createFloppaEmbed(false)] });
   }
 });
 
-// Keep the old !floppa logic for servers where the bot is added
+// Handle Messages (!floppa or keywords)
 client.on("messageCreate", async (message) => {
   if (message.author.bot) return;
+
   const content = message.content.toLowerCase();
-  if (content === "!floppa" || content.includes("bruh") || content.includes("buh")) {
-    await message.channel.send({ embeds: [createFloppaEmbed()] });
+  const hasBuh = content.includes("buh") || content.includes("bruh");
+
+  if (content === "!floppa" || hasBuh) {
+    await message.channel.send({ embeds: [createFloppaEmbed(hasBuh)] });
   }
 });
 
+// Web Server
+app.get("/", (req, res) => res.send("✅ Floppa Bot is Online and Buh-ready!"));
+app.listen(PORT, '0.0.0.0', () => console.log(`🌐 Running on port ${PORT}`));
+
 client.once("ready", () => {
-  console.log(`✅ ${client.user.tag} is online`);
+  console.log(`✅ Logged in as ${client.user.tag}`);
 });
 
 client.login(TOKEN);
