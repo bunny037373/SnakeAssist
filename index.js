@@ -12,8 +12,10 @@ const {
 
 const app = express();
 const PORT = process.env.PORT || 10000;
-const CLIENT_ID = "1291460183750606919"; // your bot's client ID
-const GUILD_ID = "1116594277796036618"; // your server ID
+const TOKEN = process.env.DISCORD_TOKEN;
+const CLIENT_ID = "1291460183750606919"; // Hardcoded to fix undefined error
+const GUILD_ID = "1116594277796036618"; // Your server ID
+
 
 
 // Special GIF for "buh" or "bruh"
