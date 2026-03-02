@@ -7,21 +7,20 @@ const {
     Partials, 
     REST, 
     Routes, 
-    SlashCommandBuilder, 
-    ChatInputCommandInteraction 
+    SlashCommandBuilder 
 } = require("discord.js");
 
 const app = express();
 const PORT = process.env.PORT || 10000;
 const TOKEN = process.env.DISCORD_TOKEN;
 const CLIENT_ID = process.env.CLIENT_ID;
-const GUILD_ID = process.env.GUILD_ID; // Optional: For testing commands in one server
 
 // Special GIF for "buh" or "bruh"
 const BUH_GIF = "https://media.discordapp.net/attachments/1363398109803053109/1410649367194374196/attachment.gif";
 
 // All Floppa images
 const FLOPPA_IMAGES = [
+  // Original ones
   "https://media.discordapp.net/attachments/1219622260718047333/1475237750390390915/00.png",
   "https://media.discordapp.net/attachments/1219622260718047333/1475237750797111358/R.png",
   "https://media.discordapp.net/attachments/1219622260718047333/1475237751296098597/wp9608133.png",
@@ -66,7 +65,7 @@ const client = new Client({
   partials: [Partials.Channel]
 });
 
-// --- REGISTER SLASH COMMAND WITH OPTIONAL USER TARGET ---
+// --- REGISTER SLASH COMMAND (GLOBAL) ---
 const commands = [
   new SlashCommandBuilder()
     .setName("floppa")
@@ -82,18 +81,9 @@ const rest = new REST({ version: "10" }).setToken(TOKEN);
 
 (async () => {
   try {
-    console.log("Registering slash commands...");
-    // For instant testing in a server:
-    if (GUILD_ID) {
-      await rest.put(
-        Routes.applicationGuildCommands(CLIENT_ID, GUILD_ID),
-        { body: commands }
-      );
-      console.log("Slash commands registered in test server!");
-    } else {
-      await rest.put(Routes.applicationCommands(CLIENT_ID), { body: commands });
-      console.log("Slash commands registered globally!");
-    }
+    console.log("Registering slash commands globally...");
+    await rest.put(Routes.applicationCommands(CLIENT_ID), { body: commands });
+    console.log("✅ Slash commands registered globally!");
   } catch (e) { console.error(e); }
 })();
 
@@ -111,11 +101,17 @@ client.on("interactionCreate", async (interaction) => {
     const targetUser = interaction.options.getUser("user");
     const embed = createFloppaEmbed(false);
 
+    // If in DM or no user specified, just reply in the channel
+    if (!interaction.guild) {
+      await interaction.reply({ embeds: [embed] });
+      return;
+    }
+
     if (targetUser) {
       try {
         await targetUser.send({ embeds: [embed] });
         await interaction.reply({ content: `✅ Sent a Floppa to ${targetUser.tag}!`, ephemeral: true });
-      } catch (err) {
+      } catch {
         await interaction.reply({ content: "❌ Could not DM this user.", ephemeral: true });
       }
     } else {
@@ -124,9 +120,10 @@ client.on("interactionCreate", async (interaction) => {
   }
 });
 
-// Handle messages (!floppa or buh/bruh)
+// Handle message triggers (!floppa or buh/bruh)
 client.on("messageCreate", async (message) => {
   if (message.author.bot) return;
+
   const content = message.content.toLowerCase();
   const hasBuh = content.includes("buh") || content.includes("bruh");
 
