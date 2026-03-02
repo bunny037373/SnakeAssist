@@ -7,20 +7,21 @@ const {
     Partials, 
     REST, 
     Routes, 
-    SlashCommandBuilder 
+    SlashCommandBuilder, 
+    ChatInputCommandInteraction 
 } = require("discord.js");
 
 const app = express();
 const PORT = process.env.PORT || 10000;
 const TOKEN = process.env.DISCORD_TOKEN;
 const CLIENT_ID = process.env.CLIENT_ID;
+const GUILD_ID = process.env.GUILD_ID; // Optional: For testing commands in one server
 
 // Special GIF for "buh" or "bruh"
 const BUH_GIF = "https://media.discordapp.net/attachments/1363398109803053109/1410649367194374196/attachment.gif";
 
 // All Floppa images
 const FLOPPA_IMAGES = [
-  // Original ones
   "https://media.discordapp.net/attachments/1219622260718047333/1475237750390390915/00.png",
   "https://media.discordapp.net/attachments/1219622260718047333/1475237750797111358/R.png",
   "https://media.discordapp.net/attachments/1219622260718047333/1475237751296098597/wp9608133.png",
@@ -47,8 +48,6 @@ const FLOPPA_IMAGES = [
   "https://media.discordapp.net/attachments/1219622260718047333/1475240460372152372/floppa6.webp",
   "https://media.discordapp.net/attachments/1219622260718047333/1475240460791447602/floppa7.jpg",
   "https://media.discordapp.net/attachments/1219622260718047333/1475240461152293034/floppa8.jpg",
-
-  // NEW ones you gave me
   "https://cdn.discordapp.com/attachments/1219622260718047333/1475280387348500560/image.png",
   "https://cdn.discordapp.com/attachments/1219622260718047333/1475280387759673440/image.png",
   "https://media.discordapp.net/attachments/1219622260718047333/1475280388111728680/image.png",
@@ -67,20 +66,34 @@ const client = new Client({
   partials: [Partials.Channel]
 });
 
-// --- REGISTER SLASH COMMAND ---
+// --- REGISTER SLASH COMMAND WITH OPTIONAL USER TARGET ---
 const commands = [
   new SlashCommandBuilder()
-    .setName('floppa')
-    .setDescription('Summon a random Floppa anywhere!') // Works in DMs too
+    .setName("floppa")
+    .setDescription("Summon a random Floppa or DM it to someone!")
+    .addUserOption(option =>
+      option.setName("user")
+        .setDescription("Optional: DM this Floppa to someone")
+        .setRequired(false)
+    )
 ].map(c => c.toJSON());
 
-const rest = new REST({ version: '10' }).setToken(TOKEN);
+const rest = new REST({ version: "10" }).setToken(TOKEN);
 
 (async () => {
   try {
-    console.log('Registering slash commands...');
-    await rest.put(Routes.applicationCommands(CLIENT_ID), { body: commands });
-    console.log('Slash commands registered!');
+    console.log("Registering slash commands...");
+    // For instant testing in a server:
+    if (GUILD_ID) {
+      await rest.put(
+        Routes.applicationGuildCommands(CLIENT_ID, GUILD_ID),
+        { body: commands }
+      );
+      console.log("Slash commands registered in test server!");
+    } else {
+      await rest.put(Routes.applicationCommands(CLIENT_ID), { body: commands });
+      console.log("Slash commands registered globally!");
+    }
   } catch (e) { console.error(e); }
 })();
 
@@ -90,31 +103,41 @@ function createFloppaEmbed(isBuh = false) {
   return new EmbedBuilder().setImage(url);
 }
 
-// Slash command
+// Handle Slash Commands
 client.on("interactionCreate", async (interaction) => {
   if (!interaction.isChatInputCommand()) return;
 
-  if (interaction.commandName === 'floppa') {
-    await interaction.reply({ embeds: [createFloppaEmbed(false)] });
+  if (interaction.commandName === "floppa") {
+    const targetUser = interaction.options.getUser("user");
+    const embed = createFloppaEmbed(false);
+
+    if (targetUser) {
+      try {
+        await targetUser.send({ embeds: [embed] });
+        await interaction.reply({ content: `✅ Sent a Floppa to ${targetUser.tag}!`, ephemeral: true });
+      } catch (err) {
+        await interaction.reply({ content: "❌ Could not DM this user.", ephemeral: true });
+      }
+    } else {
+      await interaction.reply({ embeds: [embed] });
+    }
   }
 });
 
-// Message commands
+// Handle messages (!floppa or buh/bruh)
 client.on("messageCreate", async (message) => {
   if (message.author.bot) return;
-
   const content = message.content.toLowerCase();
   const hasBuh = content.includes("buh") || content.includes("bruh");
 
   if (content === "!floppa" || content === "?floppa" || hasBuh) {
-    // Send Floppa in same channel (works in DMs too)
     await message.channel.send({ embeds: [createFloppaEmbed(hasBuh)] });
   }
 });
 
 // Web server
 app.get("/", (req, res) => res.send("✅ Floppa Bot is Online and Buh-ready!"));
-app.listen(PORT, '0.0.0.0', () => console.log(`🌐 Running on port ${PORT}`));
+app.listen(PORT, "0.0.0.0", () => console.log(`🌐 Running on port ${PORT}`));
 
 client.once("ready", () => {
   console.log(`✅ Logged in as ${client.user.tag}`);
