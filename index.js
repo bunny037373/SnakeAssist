@@ -14,6 +14,7 @@ const app = express();
 const PORT = process.env.PORT || 10000;
 const TOKEN = process.env.DISCORD_TOKEN;
 const CLIENT_ID = process.env.CLIENT_ID;
+const GUILD_ID = "1116594277796036618"; // Your server ID
 
 // Special GIF for "buh" or "bruh"
 const BUH_GIF = "https://media.discordapp.net/attachments/1363398109803053109/1410649367194374196/attachment.gif";
@@ -65,7 +66,7 @@ const client = new Client({
   partials: [Partials.Channel]
 });
 
-// --- REGISTER SLASH COMMAND (GLOBAL) ---
+// --- REGISTER SLASH COMMAND (GUILD) ---
 const commands = [
   new SlashCommandBuilder()
     .setName("floppa")
@@ -81,9 +82,9 @@ const rest = new REST({ version: "10" }).setToken(TOKEN);
 
 (async () => {
   try {
-    console.log("Registering slash commands globally...");
-    await rest.put(Routes.applicationCommands(CLIENT_ID), { body: commands });
-    console.log("✅ Slash commands registered globally!");
+    console.log("Registering slash commands in guild...");
+    await rest.put(Routes.applicationGuildCommands(CLIENT_ID, GUILD_ID), { body: commands });
+    console.log("✅ Slash commands registered in your guild!");
   } catch (e) { console.error(e); }
 })();
 
@@ -101,7 +102,6 @@ client.on("interactionCreate", async (interaction) => {
     const targetUser = interaction.options.getUser("user");
     const embed = createFloppaEmbed(false);
 
-    // If in DM or no user specified, just reply in the channel
     if (!interaction.guild) {
       await interaction.reply({ embeds: [embed] });
       return;
@@ -139,5 +139,4 @@ app.listen(PORT, "0.0.0.0", () => console.log(`🌐 Running on port ${PORT}`));
 client.once("ready", () => {
   console.log(`✅ Logged in as ${client.user.tag}`);
 });
-
 client.login(TOKEN);
