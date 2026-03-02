@@ -1,5 +1,11 @@
 require("dotenv").config();
-const { REST, Routes, SlashCommandBuilder } = require("discord.js");
+const {
+  REST,
+  Routes,
+  SlashCommandBuilder,
+  ApplicationIntegrationType,
+  InteractionContextType
+} = require("discord.js");
 
 const TOKEN = process.env.DISCORD_TOKEN;
 const CLIENT_ID = "1291460183750606919";
@@ -8,6 +14,15 @@ const commands = [
   new SlashCommandBuilder()
     .setName("floppa")
     .setDescription("Summon a random Floppa")
+    .setIntegrationTypes(
+      ApplicationIntegrationType.GuildInstall,
+      ApplicationIntegrationType.UserInstall
+    )
+    .setContexts(
+      InteractionContextType.Guild,
+      InteractionContextType.BotDM,
+      InteractionContextType.PrivateChannel
+    )
 ].map(command => command.toJSON());
 
 const rest = new REST({ version: "10" }).setToken(TOKEN);

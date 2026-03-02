@@ -77,7 +77,7 @@ client.on("interactionCreate", async (interaction) => {
 
   await interaction.reply({
     embeds: [createFloppaEmbed()],
-    ephemeral: false
+    ephemeral: true
   });
 });
 
