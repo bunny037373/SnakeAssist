@@ -12,9 +12,9 @@ const {
 
 const app = express();
 const PORT = process.env.PORT || 10000;
-const TOKEN = process.env.DISCORD_TOKEN;
-const CLIENT_ID = process.env.CLIENT_ID;
-const GUILD_ID = "1116594277796036618"; // Your server ID
+const CLIENT_ID = "1291460183750606919"; // your bot's client ID
+const GUILD_ID = "1116594277796036618"; // your server ID
+
 
 // Special GIF for "buh" or "bruh"
 const BUH_GIF = "https://media.discordapp.net/attachments/1363398109803053109/1410649367194374196/attachment.gif";
