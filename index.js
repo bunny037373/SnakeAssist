@@ -73,12 +73,25 @@ function createFloppaEmbed(isBuh = false) {
 // ================= SLASH HANDLER =================
 client.on("interactionCreate", async (interaction) => {
   if (!interaction.isChatInputCommand()) return;
-  if (interaction.commandName !== "floppa") return;
 
-  await interaction.reply({
-    embeds: [createFloppaEmbed()],
-    ephemeral: true
-  });
+  if (interaction.commandName === "floppa") {
+    await interaction.reply({
+      embeds: [createFloppaEmbed()],
+      ephemeral: true
+    });
+    return;
+  }
+
+  if (interaction.commandName === "say") {
+    const text = interaction.options.getString("text", true);
+
+    await interaction.channel.send(text);
+
+    await interaction.reply({
+      content: "✅ Sent anonymously.",
+      ephemeral: true
+    });
+  }
 });
 
 // ================= MESSAGE TRIGGERS =================
