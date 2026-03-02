@@ -4,7 +4,8 @@ const {
   Client,
   GatewayIntentBits,
   Partials,
-  EmbedBuilder
+  EmbedBuilder,
+  MessageFlags
 } = require("discord.js");
 
 const app = express();
@@ -77,7 +78,7 @@ client.on("interactionCreate", async (interaction) => {
   if (interaction.commandName === "floppa") {
     await interaction.reply({
       embeds: [createFloppaEmbed()],
-      ephemeral: true
+      flags: MessageFlags.Ephemeral
     });
     return;
   }
@@ -89,7 +90,7 @@ client.on("interactionCreate", async (interaction) => {
 
     await interaction.reply({
       content: "✅ Sent anonymously.",
-      ephemeral: true
+      flags: MessageFlags.Ephemeral
     });
   }
 });
@@ -115,7 +116,7 @@ app.listen(PORT, "0.0.0.0", () =>
 );
 
 // ================= LOGIN =================
-client.once("ready", () => {
+client.once("clientReady", () => {
   console.log(`✅ Logged in as ${client.user.tag}`);
 });
 
