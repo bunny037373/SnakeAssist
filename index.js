@@ -92,7 +92,7 @@ client.on("interactionCreate", async (interaction) => {
       floppaImages[Math.floor(Math.random() * floppaImages.length)];
 
     const embed = new EmbedBuilder()
-      .setTitle("🐆 FLOPPA")
+      
       .setImage(randomImage)
       .setColor(0xff9900);
 
