@@ -1,23 +1,26 @@
 require("dotenv").config();
-
-const {
-  Client,
-  GatewayIntentBits,
-  SlashCommandBuilder,
-  REST,
-  Routes,
-  EmbedBuilder
+const express = require("express");
+const { 
+    Client, 
+    GatewayIntentBits, 
+    EmbedBuilder, 
+    Partials, 
+    REST, 
+    Routes, 
+    SlashCommandBuilder 
 } = require("discord.js");
 
-const client = new Client({
-  intents: [GatewayIntentBits.Guilds]
-});
+const app = express();
+const PORT = process.env.PORT || 10000;
+const TOKEN = process.env.DISCORD_TOKEN;
+const CLIENT_ID = process.env.CLIENT_ID;
 
-/* ---------------- FLOPPA IMAGES ---------------- */
+// Special GIF for "buh" or "bruh"
+const BUH_GIF = "https://media.discordapp.net/attachments/1363398109803053109/1410649367194374196/attachment.gif";
 
-const floppaImages = [
-  // Your original ones
-  "https://cdn.discordapp.com/attachments/1219622260718047333/1475280124923351344/image.png",
+// All Floppa images
+const FLOPPA_IMAGES = [
+  // Original ones
   "https://media.discordapp.net/attachments/1219622260718047333/1475237750390390915/00.png",
   "https://media.discordapp.net/attachments/1219622260718047333/1475237750797111358/R.png",
   "https://media.discordapp.net/attachments/1219622260718047333/1475237751296098597/wp9608133.png",
@@ -45,7 +48,7 @@ const floppaImages = [
   "https://media.discordapp.net/attachments/1219622260718047333/1475240460791447602/floppa7.jpg",
   "https://media.discordapp.net/attachments/1219622260718047333/1475240461152293034/floppa8.jpg",
 
-  // New ones
+  // NEW ones you gave me
   "https://cdn.discordapp.com/attachments/1219622260718047333/1475280387348500560/image.png",
   "https://cdn.discordapp.com/attachments/1219622260718047333/1475280387759673440/image.png",
   "https://media.discordapp.net/attachments/1219622260718047333/1475280388111728680/image.png",
@@ -54,55 +57,67 @@ const floppaImages = [
   "https://media.discordapp.net/attachments/1219622260718047333/1475280389940707460/image.png"
 ];
 
-/* ---------------- SLASH COMMAND ---------------- */
+const client = new Client({
+  intents: [
+    GatewayIntentBits.Guilds,
+    GatewayIntentBits.GuildMessages,
+    GatewayIntentBits.MessageContent,
+    GatewayIntentBits.DirectMessages
+  ],
+  partials: [Partials.Channel]
+});
 
-const command = new SlashCommandBuilder()
-  .setName("floppa")
-  .setDescription("Send a random floppa 🐆")
-  .setIntegrationTypes([0, 1]) // Guild + User install
-  .setContexts([0, 1, 2]);     // Guilds, Bot DMs, User DMs
+// --- REGISTER SLASH COMMAND ---
+const commands = [
+  new SlashCommandBuilder()
+    .setName('floppa')
+    .setDescription('Summon a random Floppa anywhere!') // Works in DMs too
+].map(c => c.toJSON());
 
-/* ---------------- REGISTER COMMAND ---------------- */
-
-const rest = new REST({ version: "10" }).setToken(process.env.TOKEN);
+const rest = new REST({ version: '10' }).setToken(TOKEN);
 
 (async () => {
   try {
-    console.log("Registering /floppa...");
-    await rest.put(
-      Routes.applicationCommands(process.env.CLIENT_ID),
-      { body: [command.toJSON()] }
-    );
-    console.log("Slash command registered.");
-  } catch (error) {
-    console.error(error);
-  }
+    console.log('Registering slash commands...');
+    await rest.put(Routes.applicationCommands(CLIENT_ID), { body: commands });
+    console.log('Slash commands registered!');
+  } catch (e) { console.error(e); }
 })();
 
-/* ---------------- INTERACTION HANDLER ---------------- */
+// --- LOGIC ---
+function createFloppaEmbed(isBuh = false) {
+  const url = isBuh ? BUH_GIF : FLOPPA_IMAGES[Math.floor(Math.random() * FLOPPA_IMAGES.length)];
+  return new EmbedBuilder().setImage(url);
+}
 
+// Slash command
 client.on("interactionCreate", async (interaction) => {
   if (!interaction.isChatInputCommand()) return;
-  if (interaction.commandName !== "floppa") return;
 
-  try {
-    await interaction.deferReply(); // Prevent timeout
-
-    const randomImage =
-      floppaImages[Math.floor(Math.random() * floppaImages.length)];
-
-    const embed = new EmbedBuilder()
-      
-      .setImage(randomImage)
-      .setColor(0xff9900);
-
-    await interaction.editReply({ embeds: [embed] });
-
-  } catch (err) {
-    console.error("Floppa error:", err);
+  if (interaction.commandName === 'floppa') {
+    await interaction.reply({ embeds: [createFloppaEmbed(false)] });
   }
 });
 
-/* ---------------- LOGIN ---------------- */
+// Message commands
+client.on("messageCreate", async (message) => {
+  if (message.author.bot) return;
 
-client.login(process.env.TOKEN);
+  const content = message.content.toLowerCase();
+  const hasBuh = content.includes("buh") || content.includes("bruh");
+
+  if (content === "!floppa" || content === "?floppa" || hasBuh) {
+    // Send Floppa in same channel (works in DMs too)
+    await message.channel.send({ embeds: [createFloppaEmbed(hasBuh)] });
+  }
+});
+
+// Web server
+app.get("/", (req, res) => res.send("✅ Floppa Bot is Online and Buh-ready!"));
+app.listen(PORT, '0.0.0.0', () => console.log(`🌐 Running on port ${PORT}`));
+
+client.once("ready", () => {
+  console.log(`✅ Logged in as ${client.user.tag}`);
+});
+
+client.login(TOKEN);
